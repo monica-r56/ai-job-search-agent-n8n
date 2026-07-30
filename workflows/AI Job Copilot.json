@@ -1,0 +1,964 @@
+{
+  "name": "AI Job Copilot",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "{RESUME_DRIVE_URL}",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "id": "2f72edf2-0a13-4725-9773-97a88b6641a8",
+      "name": "Download file",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        -1776,
+        -240
+      ],
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "KAEFjffYKqAsVpkQ",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "72b8cfe2-9e6e-492b-9ef4-fc85fd0d6b07",
+      "name": "Extract from File",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        -1552,
+        -240
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "bba59782-88f2-48e0-8687-efd3c525ec87",
+      "name": "Gemini Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        -1328,
+        0
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "l20pBniNK2stoTan",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a resume analysis assistant that creates LinkedIn job search filters.\n\nRead this resume text:\n\n{{ $node[\"Extract from File\"].data.text }}\n\nBased on this resume, create up to 5 suitable job search filters for LinkedIn.\n\nReturn JSON ONLY in this format:\n\n{\n  \"searches\": [\n    {\n      \"keyword\": \"Job title or main skill\",\n      \"location\": \"Country or city (e.g. India, United Kingdom)\",\n      \"experience_level\": \"Internship or Entry level or New Grad\"\n    }\n  ]\n}\n\nRules:\n- Always give between 3 and 5 searches.\n- Use only these exact values:\n  - experience_level: \"Internship\", \"Entry level\", \"New Grad\"\n  - remote: \"Remote\", \"Hybrid\", \"On-Site\"\n  - easy_apply: \"Yes\" or \"No\"\n- Pick realistic keywords based on the resume (e.g. \"Gen AI Engineer\", \"Automation Engineer\", etc).\n- Do not include any explanation text, just valid JSON.\n",
+        "options": {}
+      },
+      "id": "59eef6a1-6740-487a-8a0f-88e09e1efa54",
+      "name": "Resume Analyzer Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -1328,
+        -240
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "{RESUME_CONTENT_DOC_URL}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "={{ $json.output }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        -976,
+        -240
+      ],
+      "id": "15db0dc9-23aa-4eb2-b5d4-a628f28008d7",
+      "name": "Update a document",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "7gM8vg6nYD2tJg8Y",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2224,
+        -240
+      ],
+      "id": "36bf9b89-1bcd-4af6-97f4-8200f9bf8b30",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "532b0613-de5d-46d0-9362-f6a2d398545f",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        -208,
+        512
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "id": "fb3f3719-5df5-43dd-b033-ed27b5a3756f",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        16,
+        432
+      ],
+      "webhookId": "12409f66-fbe7-48bd-b9d7-68449f197264",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "Title",
+              "cssSelector": "div h1"
+            },
+            {
+              "key": "Company",
+              "cssSelector": "div span a"
+            },
+            {
+              "key": "Location",
+              "cssSelector": "div span[class*='topcard__flavor topcard__flavor--bullet']"
+            },
+            {
+              "key": "Description",
+              "cssSelector": "div.description__text.description__text--rich"
+            },
+            {
+              "key": "Job ID",
+              "cssSelector": "a[data-item-type='semaphore']",
+              "returnValue": "attribute",
+              "attribute": "data-semaphore-content-urn"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8144586e-7c78-4fd6-8254-71f6131af231",
+      "name": "Extract HTML Job Details",
+      "type": "n8n-nodes-base.html",
+      "position": [
+        464,
+        432
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "240418dc-3349-48d5-ba59-3aa590d71950",
+              "name": "Description",
+              "type": "string",
+              "value": "={{ $json.Description.replaceAll(/\\s+/g, \" \")}}"
+            },
+            {
+              "id": "7b24938f-8b47-488d-9f65-54d036dcffd5",
+              "name": "Job ID",
+              "type": "string",
+              "value": "={{ $json['Job ID'].split(\":\").last() }}"
+            },
+            {
+              "id": "d6addada-9e01-464f-a768-c19f6224c491",
+              "name": "Apply Link",
+              "type": "string",
+              "value": "={{ \"https://www.linkedin.com/jobs/view/\"+ $json['Job ID'].split(\":\").last()  }}"
+            },
+            {
+              "id": "21c89d3a-c8b6-44eb-9719-9ae5716a7c76",
+              "name": "Title",
+              "type": "string",
+              "value": "={{ $json.Title }}"
+            },
+            {
+              "id": "da713845-9a81-486e-bff2-1613105e424d",
+              "name": "Company",
+              "type": "string",
+              "value": "={{ $json.Company }}"
+            },
+            {
+              "id": "1a9a31dd-8d51-4f35-b6b6-ca8a348de5d7",
+              "name": "Location",
+              "type": "string",
+              "value": "={{ $json.Location }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ba4f3d0b-e2f8-448c-a727-800fd06d51ab",
+      "name": "Set Job Details",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        688,
+        432
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "jsCode": "// CONFIG values\nconst preferredRemote = $('User Preference').first().json.preferredRemote || \"\";\nconst preferredEasyApply = $('User Preference').first().json.preferredEasyApply || \"\";\nconst maxJobs = $('User Preference').first().json.maxJobsPerSearch || 10;\n\n// Get AI Raw Output\nif (!items.length) {\n  throw new Error(\"No input received.\");\n}\n\nconst source = items[0].json;\n\n// Support both AI node and Google Docs\nlet raw =\n  source.output ??\n  source.content ??\n  source.text ??\n  source.response ??\n  \"\";\n\nif (!raw) {\n  throw new Error(\n    \"No JSON found. Available fields: \" +\n    Object.keys(source).join(\", \")\n  );\n}\n\nraw = raw.toString().trim();\n\nraw = raw\n  .replace(/^```json/i, '')\n  .replace(/^```/, '')\n  .replace(/```$/, '')\n  .trim();\n\nlet data;\ntry {\n  data = JSON.parse(raw);\n} catch (error) {\n  throw new Error('JSON parse error: ' + error.message + \"\\nRaw: \" + raw);\n}\n\nconst searches = data.searches || [];\n\n// MAP OUTPUT + APPLY CONFIG PREFERENCES\nreturn searches.map(s => ({\n  json: {\n    Keyword: s.keyword || '',\n    Location: s.location || '',\n    'Experience Level': s.experience_level || '',\n\n    // Apply Preferred Remote if config set else use AI\n    Remote: preferredRemote !== \"\" ? preferredRemote : (s.remote || ''),\n\n    // Apply Preferred Easy Apply if config set else use AI\n    'Easy Apply': preferredEasyApply !== \"\" ? preferredEasyApply : (s.easy_apply || ''),\n\n    // Pass max jobs forward to next nodes\n    maxJobsPerSearch: maxJobs\n  }\n}));"
+      },
+      "id": "30915dc7-590d-4c84-8482-57b0c1a54e21",
+      "name": "Build Search Rows",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1552,
+        512
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1mLdMQVrluE9gL_TmCDxWPtMxGWXCBXrGli1fLl3UJfw",
+          "mode": "list",
+          "cachedResultName": "Job Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mLdMQVrluE9gL_TmCDxWPtMxGWXCBXrGli1fLl3UJfw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mLdMQVrluE9gL_TmCDxWPtMxGWXCBXrGli1fLl3UJfw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "role": "={{ $json.Title }}",
+            "company": "={{ $json.Company }}",
+            "location": "={{ $json.Location }}",
+            "link": "={{ $json['Apply Link'] }}",
+            "description": "={{ $json.Description }}",
+            "status": "NEW"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "role",
+              "displayName": "role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "applied date",
+              "displayName": "applied date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        912,
+        512
+      ],
+      "id": "46fc6de4-3969-4022-bd5f-e32b9411ad40",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ULt90NSTxZlDMZlv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        16,
+        240
+      ],
+      "id": "6d408a2e-c7fc-4ea1-9150-fdb788d233d7",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "content": "## 📄 Resume Search Generator\n### Purpose\nThis workflow analyzes a resume and creates personalized LinkedIn job search filters.\n\n### How it Works\n1. Loads the user's preferences (Remote, Easy Apply, Max Jobs).\n2. Downloads and reads the resume PDF.\n3. Extracts the resume text.\n4. Gemini analyzes the resume.\n5. Generates 3–5 suitable job search filters as JSON.\n6. Saves the generated search filters to a Google Document.\n\n### Output\nA reusable list of job search filters (Keyword, Location, Experience Level) that can be used by the main job search workflow.",
+        "height": 416,
+        "width": 624,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2960,
+        -384
+      ],
+      "id": "2d1ce8d7-1411-42b1-b562-d7c8e922f4b1",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## 🔎 Automated Job Search Workflow\n### Purpose\nThis workflow finds matching LinkedIn jobs using the generated search filters and saves the results.\n\n### How it Works\n1. Reads the saved search filters from Google Docs.\n2. Builds LinkedIn search URLs.\n3. Searches LinkedIn jobs.\n4. Extracts job links and job details.\n5. Limits the number of jobs based on the configuration.\n6. Saves the final job details to Google Sheets for tracking.\n\n### Output\nA structured list of matching jobs with role, company, location, description, apply link, and status.",
+        "height": 432,
+        "width": 624,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2960,
+        304
+      ],
+      "id": "247a34e4-fa41-47a4-a33b-66ca79545968",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 6
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -2224,
+        512
+      ],
+      "id": "c9a64ca2-88dd-404f-b473-660a7b682912",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "{RESUME_CONTENT_DOC_URL}"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        -1776,
+        512
+      ],
+      "id": "3ef093e3-9480-427c-8a2d-3d1eeebdd7e2",
+      "name": "Get document",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "7gM8vg6nYD2tJg8Y",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let url = \"https://www.linkedin.com/jobs/search/?f_TPR=r86400\"\n\nconst keyword = $input.first().json.Keyword\nconst location = $input.first().json.Location\nconst experienceLevel = $input.first().json['Experience Level']\nconst remote = $input.first().json.Remote\nconst easyApply = $input.first().json['Easy Apply']\n\nif (keyword != \"\") {\n  url += `&keywords=${keyword}`;\n}\n\nif (location != \"\") {\n  url += `&location=${location}`;\n}\n\nif (experienceLevel !== \"\") {\n  const transformedExperiences = experienceLevel\n    .split(\",\")\n    .map((exp) => {\n      switch (exp.trim()) {\n        case \"Internship\": return \"1\";\n        case \"Entry level\": return \"2\";\n        case \"New Grad\": return \"3\";\n        default: return \"\";\n      }\n    })\n    .filter(Boolean);\n  url += `&f_E=${transformedExperiences.join(\",\")}`;\n}\n\n// put f_EA *here* to match LinkedIn's order: f_E → f_EA → f_WT\nurl += \"&f_EA=true\";\n\nif (remote && remote !== \"\") {\n  const transformedRemote = remote\n    .split(\",\")\n    .map((e) => {\n      switch (e.trim()) {\n        case \"Remote\": return \"2\";\n        case \"Hybrid\": return \"3\";\n        case \"On-Site\": return \"1\";\n        default: return \"\";\n      }\n    })\n    .filter(Boolean);\n  url += `&f_WT=${transformedRemote.join(\",\")}`;\n}\n\nreturn { url };\n"
+      },
+      "id": "1c0dff2d-3880-4fa9-b3c2-5eee6451aab1",
+      "name": "LinkedIn Search URL",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1328,
+        512
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "id": "94e37cf1-3ad6-4d6f-9dd4-21931b0ff3ea",
+      "name": "Fetch jobs from LinkedIn",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1104,
+        512
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "jsCode": "const limit = $('User Preference').first().json.maxJobsPerSearch || 10;\n\n// \"items\" is the array of job items coming into this node\nreturn items.slice(0, limit);"
+      },
+      "id": "a6331066-9f9e-48d6-939e-b5075e829b9e",
+      "name": "Limit Jobs",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -656,
+        512
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "jobs",
+        "options": {}
+      },
+      "id": "38702b1d-e0da-422a-9fe4-d3778c992136",
+      "name": "Split Out",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        -432,
+        512
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Results\nWrites job results, scores, and suggestions to Google Sheets.\n",
+        "height": 112,
+        "color": 4
+      },
+      "id": "4eb47666-5e67-433f-a5e1-48965456d4a5",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        832,
+        368
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Trigger & Configuration\nControls when the workflow runs and defines global preferences such as remote type, Easy Apply preference, and maximum jobs per search.\n",
+        "height": 1056,
+        "width": 416,
+        "color": 2
+      },
+      "id": "5c316ba4-ab0f-44a2-b34a-cf7c8d5af6f2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2288,
+        -384
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Resume Intake & Analysis\nDownloads the resume, extracts text, and uses AI to understand skills, experience level, and suitable job roles.",
+        "height": 96,
+        "width": 768,
+        "color": 3
+      },
+      "id": "b3f97792-6ce2-4e51-bfd4-5674bbeaf16d",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1728,
+        -368
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Job Fetching & Parsing\nFetches job listings from LinkedIn, extracts job links, and parses detailed job information from each listing.",
+        "height": 96,
+        "width": 768,
+        "color": 4
+      },
+      "id": "34aaa14f-c0e2-4397-aec4-c6b646cf651f",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1104,
+        384
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Job Search Generation\nBuilds LinkedIn job search filters from resume insights.",
+        "height": 96,
+        "width": 400,
+        "color": 3
+      },
+      "id": "586f15fb-03b6-495d-af09-3a455eb79b32",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1712,
+        384
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "jobs",
+              "cssSelector": "ul.jobs-search__results-list li div a[class*=\"base-card\"]",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cb2b9aa2-3b18-45ab-8f23-dcc7b3599689",
+      "name": "Extract Job Links",
+      "type": "n8n-nodes-base.html",
+      "position": [
+        -880,
+        512
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fc27f286-84e9-48a2-bd32-61ec30a43b41",
+              "name": "maxJobsPerSearch",
+              "type": "string",
+              "value": "2"
+            },
+            {
+              "id": "6ac9f389-d1d6-449a-aa8a-b09250edc5dc",
+              "name": "preferredRemote",
+              "type": "string",
+              "value": "Remote"
+            },
+            {
+              "id": "d8af5579-f864-4a0d-8392-194970dfe7f6",
+              "name": "preferredEasyApply",
+              "type": "string",
+              "value": "No"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ce9fd351-bd2d-47c4-93bb-e59dd0d266ef",
+      "name": "User Preferences",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -2000,
+        -240
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fc27f286-84e9-48a2-bd32-61ec30a43b41",
+              "name": "maxJobsPerSearch",
+              "type": "string",
+              "value": "10"
+            },
+            {
+              "id": "6ac9f389-d1d6-449a-aa8a-b09250edc5dc",
+              "name": "preferredRemote",
+              "type": "string",
+              "value": "Remote"
+            },
+            {
+              "id": "d8af5579-f864-4a0d-8392-194970dfe7f6",
+              "name": "preferredEasyApply",
+              "type": "string",
+              "value": "No"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "378b6fbe-dc35-4c9c-8582-18457bd8f7a3",
+      "name": "User Preference",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -2000,
+        512
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.jobs }}",
+        "options": {}
+      },
+      "id": "5463392a-2602-4e0a-aafd-7fa4f887da72",
+      "name": "Fetch Job Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        240,
+        432
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "content": "## 🔐 Credentials Setup\nBefore running the workflow, connect these services:\n\n### Google Gemini\n- Create a Gemini API Key from Google AI Studio.\n- Add it as a Google Gemini credential in n8n.\n\n### Google Drive\n- Connect your Google account using OAuth2.\n- Used to download the resume PDF.\n\n### Google Docs\n- Connect the same Google account using OAuth2.\n- Used to save and read generated search filters.\n\n### Google Sheets\n- Connect using Google OAuth2.\n- Used to store and track job search results.\n\n**Note:** Use the same Google account for Drive, Docs, and Sheets to avoid permission issues.",
+        "height": 512,
+        "width": 656
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -512,
+        -368
+      ],
+      "id": "ec97f83d-61e6-4e53-931b-f4223e0dda90",
+      "name": "Sticky Note6"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Resume Analyzer Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Resume Analyzer Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume Analyzer Agent": {
+      "main": [
+        [
+          {
+            "node": "Update a document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "User Preferences",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Fetch Job Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract HTML Job Details": {
+      "main": [
+        [
+          {
+            "node": "Set Job Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Job Details": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Search Rows": {
+      "main": [
+        [
+          {
+            "node": "LinkedIn Search URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "User Preference",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get document": {
+      "main": [
+        [
+          {
+            "node": "Build Search Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn Search URL": {
+      "main": [
+        [
+          {
+            "node": "Fetch jobs from LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch jobs from LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Extract Job Links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit Jobs": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Job Links": {
+      "main": [
+        [
+          {
+            "node": "Limit Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "User Preferences": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "User Preference": {
+      "main": [
+        [
+          {
+            "node": "Get document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Job Page": {
+      "main": [
+        [
+          {
+            "node": "Extract HTML Job Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "8f773be4-2512-4a00-800d-4896b0b31624",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "78047ada687de07f31e64550d9b486271a05910dc5f74d8e55a2eb97829c7bfc"
+  },
+  "id": "zzFmt9Krk3j_RizrLwQAk",
+  "tags": []
+}
