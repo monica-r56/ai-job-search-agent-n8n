@@ -6,7 +6,7 @@
         "operation": "download",
         "fileId": {
           "__rl": true,
-          "value": "{RESUME_DRIVE_URL}",
+          "value": "{RESUME_URL}",
           "mode": "url"
         },
         "options": {}
@@ -28,7 +28,7 @@
     },
     {
       "parameters": {
-        "operation": "pdf",
+        "operation": "text",
         "options": {}
       },
       "id": "72b8cfe2-9e6e-492b-9ef4-fc85fd0d6b07",
@@ -62,7 +62,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=You are a resume analysis assistant that creates LinkedIn job search filters.\n\nRead this resume text:\n\n{{ $node[\"Extract from File\"].data.text }}\n\nBased on this resume, create up to 5 suitable job search filters for LinkedIn.\n\nReturn JSON ONLY in this format:\n\n{\n  \"searches\": [\n    {\n      \"keyword\": \"Job title or main skill\",\n      \"location\": \"Country or city (e.g. India, United Kingdom)\",\n      \"experience_level\": \"Internship or Entry level or New Grad\"\n    }\n  ]\n}\n\nRules:\n- Always give between 3 and 5 searches.\n- Use only these exact values:\n  - experience_level: \"Internship\", \"Entry level\", \"New Grad\"\n  - remote: \"Remote\", \"Hybrid\", \"On-Site\"\n  - easy_apply: \"Yes\" or \"No\"\n- Pick realistic keywords based on the resume (e.g. \"Gen AI Engineer\", \"Automation Engineer\", etc).\n- Do not include any explanation text, just valid JSON.\n",
+        "text": "=You are an expert Technical Recruiter, ATS Resume Parser, and Career Advisor specializing in helping students find relevant internship opportunities.\n\nYour task is to analyze the resume and generate LinkedIn job search filters that maximize the candidate's chances of finding relevant internships.\n\nResume:\n\n{{ $node[\"Extract from File\"].data.text }}\n\n----------------------------------------\nInstructions\n----------------------------------------\n\nCarefully analyze the resume in the following priority:\n\n1. Professional Summary\n2. Internship / Work Experience\n3. Projects\n4. Technical Skills\n5. Certifications\n6. Education\n\nIdentify:\n\n- Primary domain\n- Core technical skills\n- Programming languages\n- AI/ML technologies\n- Frameworks\n- Cloud technologies\n- Databases\n- Most suitable internship roles\n\n----------------------------------------\n\nGenerate exactly 5 LinkedIn job searches.\n\nEach search must represent a REALISTIC internship role that the candidate is qualified for.\n\nPrefer actual industry job titles over generic phrases.\n\nGOOD examples:\n\nAI Engineer Intern\nMachine Learning Intern\nGenerative AI Intern\nLLM Intern\nPython Developer Intern\nSoftware Engineer Intern\nBackend Developer Intern\nAI Automation Intern\nData Science Intern\nComputer Vision Intern\nNLP Intern\nFull Stack Developer Intern\n\nBAD examples:\n\nInternship\nInternship Opportunities\nStudent Internship\nFreshers Jobs\nEntry Level Jobs\nGraduate Jobs\nJunior Positions\n\nDo NOT generate generic searches.\n\nEach keyword should be based on the strongest skills, projects, and experience found in the resume.\n\nIf multiple domains are present, prioritize them in this order:\n\n1. Internship / Work Experience\n2. Projects\n3. Technical Skills\n4. Certifications\n\n----------------------------------------\n\nLocation Rules\n\nExtract the preferred work location using this priority:\n\n1. Current Location\n2. Preferred Location\n3. Country\n\nNever leave the location blank.\n\nIf a city is available, use the city.\n\nOtherwise use the country.\n\nExamples:\n\n\"Bangalore\"\n\"Chennai\"\n\"Hyderabad\"\n\"Pune\"\n\"India\"\n\n----------------------------------------\n\nExperience Level Rules\n\nSince this workflow is designed for students, ALWAYS return:\n\n\"Internship\"\n\nDo not infer or generate any other experience level.\n\n----------------------------------------\n\nKeyword Rules\n\nEach keyword must:\n\n- Represent a real job title commonly used on LinkedIn.\n- Be concise and recruiter-friendly.\n- Contain a maximum of 4 words.\n- Be based on the candidate's strongest profile.\n- Include \"Intern\" where appropriate (e.g., \"AI Engineer Intern\", \"Software Engineer Intern\"). If the platform commonly uses the title without \"Intern\" but filters by Internship experience level, use the standard title.\n\nAvoid inventing niche titles that are rarely used.\n\n----------------------------------------\n\nRanking\n\nReturn the searches from MOST relevant to LEAST relevant based on the candidate's profile.\n\n----------------------------------------\n\nReturn ONLY valid JSON.\n\nOutput format:\n\n{\n  \"searches\": [\n    {\n      \"keyword\": \"\",\n      \"location\": \"\",\n      \"experience_level\": \"Internship\"\n    }\n  ]\n}\n\nReturn nothing except valid JSON.",
         "options": {}
       },
       "id": "59eef6a1-6740-487a-8a0f-88e09e1efa54",
@@ -77,7 +77,7 @@
     {
       "parameters": {
         "operation": "update",
-        "documentURL": "{RESUME_CONTENT_DOC_URL}",
+        "documentURL": "{RESUME_KEYWORD_DOCS_URL}",
         "actionsUi": {
           "actionFields": [
             {
@@ -433,7 +433,7 @@
     {
       "parameters": {
         "operation": "get",
-        "documentURL": "{RESUME_CONTENT_DOC_URL}"
+        "documentURL": "{RESUME_KEYWORD_DOCS_URL}"
       },
       "type": "n8n-nodes-base.googleDocs",
       "typeVersion": 2,
@@ -476,19 +476,6 @@
         512
       ],
       "typeVersion": 4.2
-    },
-    {
-      "parameters": {
-        "jsCode": "const limit = $('User Preference').first().json.maxJobsPerSearch || 10;\n\n// \"items\" is the array of job items coming into this node\nreturn items.slice(0, limit);"
-      },
-      "id": "a6331066-9f9e-48d6-939e-b5075e829b9e",
-      "name": "Limit Jobs",
-      "type": "n8n-nodes-base.code",
-      "position": [
-        -656,
-        512
-      ],
-      "typeVersion": 2
     },
     {
       "parameters": {
@@ -706,6 +693,19 @@
       ],
       "id": "ec97f83d-61e6-4e53-931b-f4223e0dda90",
       "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "jsCode": "const MAX_TOTAL = 10;\nconst MAX_PER_COMPANY = 2;\n\n// Extract the jobs array\nconst jobs = items[0].json.jobs || [];\n\n// Remove duplicate URLs first\nconst uniqueUrls = [...new Set(jobs)];\n\nconst companyCounts = {};\nconst filteredUrls = [];\n\nfor (const url of uniqueUrls) {\n\n    // Extract company slug from LinkedIn URL\n    // Example:\n    // custom-software-engineer-at-accenture-in-india-4438542291\n\n    const match = url.match(/-at-(.+?)-\\d+/i);\n\n    let company = \"unknown\";\n\n    if (match) {\n\n        company = match[1]\n            .replace(/-in-.*/i, \"\")\n            .toLowerCase()\n            .trim();\n\n    }\n\n    companyCounts[company] ??= 0;\n\n    if (companyCounts[company] >= MAX_PER_COMPANY) {\n        continue;\n    }\n\n    companyCounts[company]++;\n\n    filteredUrls.push(url);\n\n    if (filteredUrls.length >= MAX_TOTAL) {\n        break;\n    }\n}\n\nreturn [\n{\n    json: {\n        jobs: filteredUrls\n    }\n}\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -672,
+        512
+      ],
+      "id": "3d9db769-1285-445c-9427-687f8dafdc2a",
+      "name": "Filter URLs"
     }
   ],
   "pinData": {},
@@ -882,17 +882,6 @@
         ]
       ]
     },
-    "Limit Jobs": {
-      "main": [
-        [
-          {
-            "node": "Split Out",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Split Out": {
       "main": [
         [
@@ -908,7 +897,7 @@
       "main": [
         [
           {
-            "node": "Limit Jobs",
+            "node": "Filter URLs",
             "type": "main",
             "index": 0
           }
@@ -947,6 +936,17 @@
           }
         ]
       ]
+    },
+    "Filter URLs": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -954,7 +954,7 @@
     "executionOrder": "v1",
     "availableInMCP": false
   },
-  "versionId": "8f773be4-2512-4a00-800d-4896b0b31624",
+  "versionId": "a35cdbec-688a-4608-b0af-05bad3be7db1",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "78047ada687de07f31e64550d9b486271a05910dc5f74d8e55a2eb97829c7bfc"
