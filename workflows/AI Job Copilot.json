@@ -6,7 +6,7 @@
         "operation": "download",
         "fileId": {
           "__rl": true,
-          "value": "{RESUME_URL}",
+          "value": "{RESUME_DOC_URL}",
           "mode": "url"
         },
         "options": {}
@@ -77,7 +77,7 @@
     {
       "parameters": {
         "operation": "update",
-        "documentURL": "{RESUME_KEYWORD_DOCS_URL}",
+        "documentURL": "{KEYWORD_DOC_URL}",
         "actionsUi": {
           "actionFields": [
             {
@@ -433,7 +433,7 @@
     {
       "parameters": {
         "operation": "get",
-        "documentURL": "{RESUME_KEYWORD_DOCS_URL}"
+        "documentURL": "{KEYWORD_DOC_URL}"
       },
       "type": "n8n-nodes-base.googleDocs",
       "typeVersion": 2,
@@ -452,7 +452,7 @@
     },
     {
       "parameters": {
-        "jsCode": "let url = \"https://www.linkedin.com/jobs/search/?f_TPR=r86400\"\n\nconst keyword = $input.first().json.Keyword\nconst location = $input.first().json.Location\nconst experienceLevel = $input.first().json['Experience Level']\nconst remote = $input.first().json.Remote\nconst easyApply = $input.first().json['Easy Apply']\n\nif (keyword != \"\") {\n  url += `&keywords=${keyword}`;\n}\n\nif (location != \"\") {\n  url += `&location=${location}`;\n}\n\nif (experienceLevel !== \"\") {\n  const transformedExperiences = experienceLevel\n    .split(\",\")\n    .map((exp) => {\n      switch (exp.trim()) {\n        case \"Internship\": return \"1\";\n        case \"Entry level\": return \"2\";\n        case \"New Grad\": return \"3\";\n        default: return \"\";\n      }\n    })\n    .filter(Boolean);\n  url += `&f_E=${transformedExperiences.join(\",\")}`;\n}\n\n// put f_EA *here* to match LinkedIn's order: f_E → f_EA → f_WT\nurl += \"&f_EA=true\";\n\nif (remote && remote !== \"\") {\n  const transformedRemote = remote\n    .split(\",\")\n    .map((e) => {\n      switch (e.trim()) {\n        case \"Remote\": return \"2\";\n        case \"Hybrid\": return \"3\";\n        case \"On-Site\": return \"1\";\n        default: return \"\";\n      }\n    })\n    .filter(Boolean);\n  url += `&f_WT=${transformedRemote.join(\",\")}`;\n}\n\nreturn { url };\n"
+        "jsCode": "let url = \"https://www.linkedin.com/jobs/search/?sortBy=DD&f_TPR=r604800\";\n\nconst keyword = $input.first().json.Keyword;\nconst location = $input.first().json.Location;\nconst experienceLevel = $input.first().json[\"Experience Level\"];\nconst easyApply = $input.first().json[\"Easy Apply\"];\n\n// Keyword\nif (keyword) {\n  url += `&keywords=${encodeURIComponent(keyword)}`;\n}\n\n// Location\nif (location) {\n  url += `&location=${encodeURIComponent(location)}`;\n}\n\n// Internship filter\nif (experienceLevel === \"Internship\") {\n  url += \"&f_E=1\";\n}\n\n// Easy Apply (only if requested)\nif (easyApply === \"Yes\") {\n  url += \"&f_AL=true\";\n}\n\nreturn { url };"
       },
       "id": "1c0dff2d-3880-4fa9-b3c2-5eee6451aab1",
       "name": "LinkedIn Search URL",
@@ -954,7 +954,7 @@
     "executionOrder": "v1",
     "availableInMCP": false
   },
-  "versionId": "a35cdbec-688a-4608-b0af-05bad3be7db1",
+  "versionId": "dfe1bdd1-a926-4f96-bebd-f371b4fe4737",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "78047ada687de07f31e64550d9b486271a05910dc5f74d8e55a2eb97829c7bfc"
