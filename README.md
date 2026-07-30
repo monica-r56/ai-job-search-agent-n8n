@@ -190,7 +190,7 @@ images/workflow-overview.png
 git clone https://github.com/<your-username>/<repository-name>.git
 ```
 
-2. Import both workflow JSON files into n8n.
+2. Import workflow JSON file into n8n.
 
 3. Configure all required credentials.
 
@@ -218,25 +218,3 @@ git clone https://github.com/<your-username>/<repository-name>.git
 - Email notifications
 - Slack or Microsoft Teams integration
 - Application tracking dashboard
-
----
-
-## 🤝 Contributing
-
-Contributions, suggestions, and improvements are welcome.
-
-Feel free to fork the repository and submit a pull request.
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
----
-
-## 👩‍💻 Author
-
-**Monica R**
-
-If you found this project useful, consider giving it a ⭐ on GitHub!
