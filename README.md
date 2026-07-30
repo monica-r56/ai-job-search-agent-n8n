@@ -50,6 +50,7 @@ Copy the Resume template to google docs and Job Tracker template to google sheet
 
 - 📄 [Job Resume Template](https://docs.google.com/document/d/1AkKWz6a68GOk4Xs31IMEl77G3gTwx-HPfs-nrLgTQEc/edit?usp=sharing)
 - 📊 [Job Tracker Template](https://docs.google.com/spreadsheets/d/1mLdMQVrluE9gL_TmCDxWPtMxGWXCBXrGli1fLl3UJfw/edit?usp=sharing)
+Open the files and make a copy
 ---
 
 ### 2️⃣ Automated Job Search Workflow
