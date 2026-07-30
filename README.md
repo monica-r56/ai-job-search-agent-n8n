@@ -106,6 +106,9 @@ Google Sheets
 - JavaScript
 
 ---
+## Create an n8n Cloud account
+
+[Refer the doc](https://docs.google.com/document/d/16QER9IXlccoPbUIMKQL0s_n-SR6HbEVZqFI6DAiZ5no/edit?usp=sharing) to setup your n8n cloud account.
 
 ## 📋 Prerequisites
 
@@ -156,38 +159,7 @@ The workflow stores the following information:
 - Description
 - Apply Link
 - Status
-
-Example:
-
-| Role | Company | Location | Status |
-|------|---------|----------|--------|
-| AI Engineer Intern | Company A | Bangalore | NEW |
-| Software Engineer Intern | Company B | Remote | NEW |
-
----
-
-## 📷 Workflow
-
-> Add screenshots inside the `images/` folder.
-
-### Resume Search Generator
-
-```text
-images/resume-generator.png
-```
-
-### Automated Job Search
-
-```text
-images/job-search-workflow.png
-```
-
-### Complete Workflow
-
-```text
-images/workflow-overview.png
-```
-
+- 
 ---
 
 ## 🚀 Getting Started
